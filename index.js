@@ -1,4 +1,5 @@
 const express = require('express')
+const { MongoClient } = require('mongodb')
 var cors = require('cors')
 var bodyParser = require('body-parser')
 const axios = require('axios').default;
@@ -6,6 +7,9 @@ const app = express()
 
 app.use(cors())
 app.use(bodyParser.json())
+
+const uri = process.env.MONGO_CONNECTION_STRING;
+const client = new MongoClient(uri)
 
 app.get('/generate-color', (req, res) => {
     var generateRandomColors = function (number) {
@@ -159,4 +163,15 @@ app.post('/twitter', async (req, res) => {
     res.status(200).send(response.data);
 })
 
-app.listen(process.env.PORT || 3000)
+app.get('/category', async (req, res) => {
+    const data = await client.db("netifan")
+        .collection("config")
+        .findOne({ _id: "category" });
+    res.status(200).send(data.data);
+})
+
+client.connect(err => {
+    if (err) { console.error(err); return false; }
+    // connection to mongo is successful, listen for requests
+    app.listen(process.env.PORT || 3000)
+});
