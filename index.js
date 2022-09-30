@@ -170,6 +170,13 @@ app.get('/category', async (req, res) => {
     res.status(200).send(data.data);
 })
 
+app.put('/category', async (req, res) => {
+    await client.db("netifan")
+        .collection("config")
+        .updateOne({ _id: "category" }, { $set: { data: req.body } });
+    res.status(200).send({ status: "ok" });
+})
+
 client.connect(err => {
     if (err) { console.error(err); return false; }
     // connection to mongo is successful, listen for requests
