@@ -1,10 +1,13 @@
 const express = require('express')
 var cors = require('cors')
+var bodyParser = require('body-parser')
+const axios = require('axios').default;
 const app = express()
 
 app.use(cors())
+app.use(bodyParser.json())
 
-app.all('/generate-color', (req, res) => {
+app.get('/generate-color', (req, res) => {
     var generateRandomColors = function (number) {
         /*
         This generates colors using the following algorithm:
@@ -150,4 +153,10 @@ app.all('/generate-color', (req, res) => {
     var randomColors = generateRandomColors(1);
     res.status(200).send(randomColors[0]);
 })
+
+app.post('/twitter', async (req, res) => {
+    const res = await axios.get(`https://publish.twitter.com/oembed?url=${req.body.url}&align=center&lang=vi&omit_script=1`);
+    res.status(200).send(res.data);
+})
+
 app.listen(process.env.PORT || 3000)
