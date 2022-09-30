@@ -155,8 +155,8 @@ app.get('/generate-color', (req, res) => {
 })
 
 app.post('/twitter', async (req, res) => {
-    const res = await axios.get(`https://publish.twitter.com/oembed?url=${req.body.url}&align=center&lang=vi&omit_script=1`);
-    res.status(200).send(res.data);
+    const response = await axios.get(`https://publish.twitter.com/oembed?url=${req.body.url}&align=center&lang=vi&omit_script=1`);
+    res.status(200).send(response.data);
 })
 
 app.listen(process.env.PORT || 3000)
