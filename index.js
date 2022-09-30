@@ -164,7 +164,6 @@ app.post('/twitter', async (req, res) => {
 })
 
 app.get('/category', async (req, res) => {
-    console.log(req.header('haha'));
     const data = await client.db("netifan")
         .collection("config")
         .findOne({ _id: "category" });
@@ -172,9 +171,11 @@ app.get('/category', async (req, res) => {
 })
 
 app.put('/category', async (req, res) => {
-    await client.db("netifan")
-        .collection("config")
-        .updateOne({ _id: "category" }, { $set: { data: req.body } });
+    if (req.header('authorization') === 'Basic kGQbz6RPMLr3E6Un') {
+        await client.db("netifan")
+            .collection("config")
+            .updateOne({ _id: "category" }, { $set: { data: req.body } });
+    }
     res.status(200).send({ status: "ok" });
 })
 
