@@ -199,6 +199,26 @@ app.put('/credential', async (req, res) => {
     res.status(200).send({ status: "ok" });
 })
 
+app.get('/post', async (req, res) => {
+    if (req.header('x-key') === 'hxLCPL8BuV') {
+        const data = await client.db("netifan")
+            .collection("config")
+            .findOne({ _id: "post" });
+        res.status(200).send(JSON.parse(data.data));
+    } else {
+        res.status(500).send({ status: "something went wrong" });
+    }
+})
+
+app.put('/post', async (req, res) => {
+    if (req.header('authorization') === 'Basic kGQbz6RPMLr3E6Un') {
+        await client.db("netifan")
+            .collection("config")
+            .updateOne({ _id: "post" }, { $set: { data: JSON.stringify(req.body) } });
+    }
+    res.status(200).send({ status: "ok" });
+})
+
 client.connect(err => {
     if (err) { console.error(err); return false; }
     // connection to mongo is successful, listen for requests
