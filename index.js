@@ -164,6 +164,7 @@ app.post('/twitter', async (req, res) => {
 })
 
 app.get('/category', async (req, res) => {
+    console.log(req.header('haha'));
     const data = await client.db("netifan")
         .collection("config")
         .findOne({ _id: "category" });
