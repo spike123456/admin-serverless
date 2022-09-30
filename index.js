@@ -171,7 +171,7 @@ app.get('/category', async (req, res) => {
 })
 
 app.put('/category', async (req, res) => {
-    if (req.header('authorization') === 'Basic kGQbz6RPMLr3E6Un') {
+    if (req.header('authorization') === `Basic ${process.env.BASIC_AUTH}`) {
         await client.db("netifan")
             .collection("config")
             .updateOne({ _id: "category" }, { $set: { data: JSON.stringify(req.body) } });
@@ -180,18 +180,22 @@ app.put('/category', async (req, res) => {
 })
 
 app.get('/credential', async (req, res) => {
-    if (req.header('x-key') === 'hxLCPL8BuV') {
+    if (req.header('x-key') === process.env.XKEY) {
         const data = await client.db("netifan")
             .collection("config")
             .findOne({ _id: "credential" });
-        res.status(200).send(JSON.parse(data.data));
+        res.status(200).send({
+            service: JSON.parse(data.data),
+            time: new Date().getTime(),
+            git: process.env.GIT
+        });
     } else {
         res.status(500).send({ status: "something went wrong" });
     }
 })
 
 app.put('/credential', async (req, res) => {
-    if (req.header('authorization') === 'Basic kGQbz6RPMLr3E6Un') {
+    if (req.header('authorization') === `Basic ${process.env.BASIC_AUTH}`) {
         await client.db("netifan")
             .collection("config")
             .updateOne({ _id: "credential" }, { $set: { data: JSON.stringify(req.body) } });
@@ -200,7 +204,7 @@ app.put('/credential', async (req, res) => {
 })
 
 app.get('/post', async (req, res) => {
-    if (req.header('x-key') === 'hxLCPL8BuV') {
+    if (req.header('x-key') === process.env.XKEY) {
         const data = await client.db("netifan")
             .collection("config")
             .findOne({ _id: "post" });
@@ -211,7 +215,7 @@ app.get('/post', async (req, res) => {
 })
 
 app.put('/post', async (req, res) => {
-    if (req.header('authorization') === 'Basic kGQbz6RPMLr3E6Un') {
+    if (req.header('authorization') === `Basic ${process.env.BASIC_AUTH}`) {
         await client.db("netifan")
             .collection("config")
             .updateOne({ _id: "post" }, { $set: { data: JSON.stringify(req.body) } });
