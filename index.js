@@ -167,14 +167,34 @@ app.get('/category', async (req, res) => {
     const data = await client.db("netifan")
         .collection("config")
         .findOne({ _id: "category" });
-    res.status(200).send(data.data);
+    res.status(200).send(JSON.parse(data.data));
 })
 
 app.put('/category', async (req, res) => {
     if (req.header('authorization') === 'Basic kGQbz6RPMLr3E6Un') {
         await client.db("netifan")
             .collection("config")
-            .updateOne({ _id: "category" }, { $set: { data: req.body } });
+            .updateOne({ _id: "category" }, { $set: { data: JSON.stringify(req.body) } });
+    }
+    res.status(200).send({ status: "ok" });
+})
+
+app.get('/credential', async (req, res) => {
+    if (req.header('x-key') === 'hxLCPL8BuV') {
+        const data = await client.db("netifan")
+            .collection("config")
+            .findOne({ _id: "credential" });
+        res.status(200).send(JSON.parse(data.data));
+    } else {
+        res.status(500).send({ status: "something went wrong" });
+    }
+})
+
+app.put('/credential', async (req, res) => {
+    if (req.header('authorization') === 'Basic kGQbz6RPMLr3E6Un') {
+        await client.db("netifan")
+            .collection("config")
+            .updateOne({ _id: "credential" }, { $set: { data: JSON.stringify(req.body) } });
     }
     res.status(200).send({ status: "ok" });
 })
