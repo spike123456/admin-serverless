@@ -224,63 +224,90 @@ app.put('/post', async (req, res) => {
     res.status(200).send({ status: "ok" });
 })
 
-app.get('/test', async (req, res) => {
-    if (req.header('x-key') === process.env.XKEY) {
-        const comments = db.collection("comments");
-        const zxc = await comments.get("leo");
-        console.log(zxc);
-        console.log(typeof zxc);
-        res.status(200).send(zxc);
-    } else {
-        res.status(500).send({ status: "something went wrong" });
-    }
-})
+// app.get('/test', async (req, res) => {
+//     if (req.header('x-key') === process.env.XKEY) {
+//         const comments = db.collection("comments");
+//         const zxc = await comments.get("leo");
+//         console.log(zxc);
+//         res.status(200).send(zxc);
+//     } else {
+//         res.status(500).send({ status: "something went wrong" });
+//     }
+// })
 
 app.get('/tests', async (req, res) => {
     if (req.header('x-key') === process.env.XKEY) {
         const comments = db.collection("comments");
-        const black_animals = await comments.filter({ comment: "hihi" });
+        const black_animals = await comments.list();
         res.status(200).send(black_animals);
     } else {
         res.status(500).send({ status: "something went wrong" });
     }
 })
 
-app.put('/test', async (req, res) => {
-    if (req.header('authorization') === `Basic ${process.env.BASIC_AUTH}`) {
-        const comments = db.collection("comments");
-        await comments.set("leo", {
-            name: 'test',
-            email: 'asd',
-            comment: 'hihi'
-        }, {
-            $index: ['comment']
-        });
-        await comments.set("lisa", {
-            name: 'hehe',
-            email: 'asd',
-            comment: 'aaa'
-        }, {
-            $index: ['comment']
-        });
-        await comments.set("teppi", {
-            name: 'gogo',
-            email: 'zxc',
-            comment: 'hihi'
-        }, {
-            $index: ['comment']
-        });
-    }
-    res.status(200).send({ status: "ok" });
-})
+// app.put('/test', async (req, res) => {
+//     if (req.header('authorization') === `Basic ${process.env.BASIC_AUTH}`) {
+//         const comments = db.collection("comments");
+//         await comments.set("leo", {
+//             name: 'test',
+//             email: 'asd',
+//             comment: 'hihi'
+//         }, {
+//             $index: ['comment']
+//         });
+//         await comments.set("lisa", {
+//             name: 'hehe',
+//             email: 'asd',
+//             comment: 'aaa'
+//         }, {
+//             $index: ['comment']
+//         });
+//         await comments.set("teppi", {
+//             name: 'gogo',
+//             email: 'zxc',
+//             comment: 'hihi'
+//         }, {
+//             $index: ['comment']
+//         });
+//     }
+//     res.status(200).send({ status: "ok" });
+// })
 
-app.delete('/test', async (req, res) => {
-    if (req.header('authorization') === `Basic ${process.env.BASIC_AUTH}`) {
-        const comments = db.collection("comments");
-        await comments.delete(req.body.name);
-    }
-    res.status(200).send({ status: "ok" });
-})
+// app.delete('/test', async (req, res) => {
+//     if (req.header('authorization') === `Basic ${process.env.BASIC_AUTH}`) {
+//         const comments = db.collection("comments");
+//         await comments.delete(req.body.name);
+//     }
+//     res.status(200).send({ status: "ok" });
+// })
+
+// app.post('/schedule/comment/:key', async (req, res) => {
+//     if (req.header('authorization') === `Basic ${process.env.BASIC_AUTH}`) {
+//         const { email, comment, time } = req.body;
+//         const { key } = req.params;
+//         const comments = db.collection("sched_comments");
+//         const data = await comments.get(key);
+//         if (data) {
+//             res.status(406).send({ status: "fail" });
+//         } else {
+//             const { results } = await comments.filter({ time });
+//             if (results.length === 3) {
+//                 res.status(416).send({ status: "fail" });
+//             } else {
+//                 await comments.set(key, {
+//                     email,
+//                     comment,
+//                     time
+//                 }, {
+//                     $index: ['time']
+//                 });
+//                 res.status(200).send({ status: "ok" });
+//             }
+//         }
+//     } else {
+//         res.status(200).send({ status: "ok" });
+//     }
+// })
 
 client.connect(err => {
     if (err) { console.error(err); return false; }
