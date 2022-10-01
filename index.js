@@ -2,14 +2,15 @@ const express = require('express')
 const { MongoClient } = require('mongodb')
 var cors = require('cors')
 var bodyParser = require('body-parser')
+const CyclicDb = require("cyclic-dynamodb")
+const db = CyclicDb(process.env.COMMENT_TABLE_NAME)
 const axios = require('axios').default;
 const app = express()
 
 app.use(cors())
 app.use(bodyParser.json())
 
-const uri = process.env.MONGO_CONNECTION_STRING;
-const client = new MongoClient(uri)
+const client = new MongoClient(process.env.MONGO_CONNECTION_STRING)
 
 app.get('/generate-color', (req, res) => {
     var generateRandomColors = function (number) {
@@ -219,6 +220,64 @@ app.put('/post', async (req, res) => {
         await client.db("netifan")
             .collection("config")
             .updateOne({ _id: "post" }, { $set: { data: JSON.stringify(req.body) } });
+    }
+    res.status(200).send({ status: "ok" });
+})
+
+app.get('/test', async (req, res) => {
+    if (req.header('x-key') === process.env.XKEY) {
+        const comments = db.collection("comments");
+        const zxc = await comments.get("leo");
+        console.log(zxc);
+        console.log(typeof zxc);
+        res.status(200).send(zxc);
+    } else {
+        res.status(500).send({ status: "something went wrong" });
+    }
+})
+
+app.get('/tests', async (req, res) => {
+    if (req.header('x-key') === process.env.XKEY) {
+        const comments = db.collection("comments");
+        const black_animals = await comments.filter({ comment: "hihi" });
+        res.status(200).send(black_animals);
+    } else {
+        res.status(500).send({ status: "something went wrong" });
+    }
+})
+
+app.put('/test', async (req, res) => {
+    if (req.header('authorization') === `Basic ${process.env.BASIC_AUTH}`) {
+        const comments = db.collection("comments");
+        await comments.set("leo", {
+            name: 'test',
+            email: 'asd',
+            comment: 'hihi'
+        }, {
+            $index: ['comment']
+        });
+        await comments.set("lisa", {
+            name: 'hehe',
+            email: 'asd',
+            comment: 'aaa'
+        }, {
+            $index: ['comment']
+        });
+        await comments.set("teppi", {
+            name: 'gogo',
+            email: 'zxc',
+            comment: 'hihi'
+        }, {
+            $index: ['comment']
+        });
+    }
+    res.status(200).send({ status: "ok" });
+})
+
+app.delete('/test', async (req, res) => {
+    if (req.header('authorization') === `Basic ${process.env.BASIC_AUTH}`) {
+        const comments = db.collection("comments");
+        await comments.delete(req.body.name);
     }
     res.status(200).send({ status: "ok" });
 })
