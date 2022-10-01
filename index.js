@@ -238,7 +238,7 @@ app.put('/post', async (req, res) => {
 app.get('/tests', async (req, res) => {
     if (req.header('x-key') === process.env.XKEY) {
         const comments = db.collection("comments");
-        const black_animals = await comments.list();
+        const black_animals = await comments.filter({});
         res.status(200).send(black_animals);
     } else {
         res.status(500).send({ status: "something went wrong" });
