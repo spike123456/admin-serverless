@@ -20,7 +20,6 @@
     "axios": "^0.27.2",
     "body-parser": "^1.20.0",
     "cors": "^2.8.5",
-    "cyclic-dynamodb": "^0.0.27",
     "express": "^4.17.1",
     "mongodb": "^4.10.0"
   }
