@@ -12,6 +12,54 @@ app.use(bodyParser.json())
 
 const client = new MongoClient(process.env.MONGO_CONNECTION_STRING)
 
+function genDigit(digit) {
+    return `${digit < 10 ? '0' : ''}${digit}`;
+}
+
+function genTimeNow(time) {
+    return `${time.getFullYear()}${genDigit(time.getMonth())}${genDigit(time.getDate())}${genDigit(time.getHours())}${genDigit(time.getMinutes())}`
+}
+
+async function postComment(articleId, email, comment, parent) {
+    try {
+        const response = await axios.post(`https://api.netifan.net/comment/v1/new/article/${articleId}${parent ? `/comment/${parent}` : ''}`, {
+            email,
+            content: comment
+        });
+        return response.data.data.id;
+    } catch (e) {
+        return undefined;
+    }
+}
+
+async function postScheduleComment(key, item, comments) {
+    const {
+        articleId,
+        email,
+        comment,
+        parent
+    } = item;
+    const id = await postComment(articleId, email, comment, parent);
+    const { results } = await comments.filter({ parent: key });
+    if (results.length > 0) {
+        if (id) {
+            await Promise.all(results.map((result) => comments.set(result.key, {
+                articleId: result.props.articleId,
+                email: result.props.email,
+                comment: result.props.comment,
+                time: result.props.time,
+                scheduledAt: result.props.scheduledAt,
+                name: result.props.name,
+                parent: id,
+                parentData: JSON.stringify(item)
+            })));
+        } else {
+            await Promise.all(results.map((result) => comments.delete(result.key)));
+        }
+    }
+    await comments.delete(key);
+}
+
 app.get('/generate-color', (req, res) => {
     var generateRandomColors = function (number) {
         /*
@@ -160,8 +208,12 @@ app.get('/generate-color', (req, res) => {
 })
 
 app.post('/twitter', async (req, res) => {
-    const response = await axios.get(`https://publish.twitter.com/oembed?url=${req.body.url}&align=center&lang=vi&omit_script=1`);
-    res.status(200).send(response.data);
+    try {
+        const response = await axios.get(`https://publish.twitter.com/oembed?url=${req.body.url}&align=center&lang=vi&omit_script=1`);
+        res.status(200).send(response.data);
+    } catch (e) {
+        res.status(400).send({ status: 'fail' });
+    }
 })
 
 app.get('/category', async (req, res) => {
@@ -224,90 +276,97 @@ app.put('/post', async (req, res) => {
     res.status(200).send({ status: "ok" });
 })
 
-// app.get('/test', async (req, res) => {
-//     if (req.header('x-key') === process.env.XKEY) {
-//         const comments = db.collection("comments");
-//         const zxc = await comments.get("leo");
-//         console.log(zxc);
-//         res.status(200).send(zxc);
-//     } else {
-//         res.status(500).send({ status: "something went wrong" });
-//     }
-// })
+app.post('/schedule/comments', async (req, res) => {
+    if (req.header('authorization') === `Basic ${process.env.BASIC_AUTH}`) {
+        const { articleId, email, comment, parent, scheduledAt, name } = req.body;
+        const time = genTimeNow(new Date(scheduledAt));
+        const key = `${time}-${parent || articleId}`;
+        const comments = db.collection("sched_comments");
+        const data = await comments.get(key);
+        if (data) {
+            res.status(406).send({ status: "fail" });
+        } else {
+            const { results } = await comments.filter({ time });
+            if (results.length === 3) {
+                res.status(416).send({ status: "fail" });
+            } else {
+                let now = new Date().getTime();
+                if (parent) {
+                    const myParent = await comments.get(parent);
+                    if (!myParent) {
+                        res.status(400).send({ status: "fail" });
+                        return;
+                    }
+                    now = myParent.scheduledAt;
+                }
+                if (now + 5 * 60 * 1000 > scheduledAt) {
+                    res.status(400).send({ status: "fail" });
+                } else {
 
-app.get('/tests', async (req, res) => {
-    if (req.header('x-key') === process.env.XKEY) {
-        const comments = db.collection("comments");
-        const black_animals = await comments.filter({});
-        res.status(200).send(black_animals);
+                }
+                if (parent) {
+                    const myParent = await comments.get(parent);
+                    if (myParent) {
+                        await comments.set(key, {
+                            articleId,
+                            email,
+                            comment,
+                            time,
+                            name,
+                            scheduledAt,
+                            parent,
+                        }, {
+                            $index: ['time']
+                        });
+                        res.status(200).send({ status: "ok" });
+                    } else {
+                        res.status(400).send({ status: "fail" });
+                    }
+                }
+            }
+        }
     } else {
-        res.status(500).send({ status: "something went wrong" });
+        res.status(200).send({ status: "ok" });
     }
 })
 
-// app.put('/test', async (req, res) => {
-//     if (req.header('authorization') === `Basic ${process.env.BASIC_AUTH}`) {
-//         const comments = db.collection("comments");
-//         await comments.set("leo", {
-//             name: 'test',
-//             email: 'asd',
-//             comment: 'hihi'
-//         }, {
-//             $index: ['comment']
-//         });
-//         await comments.set("lisa", {
-//             name: 'hehe',
-//             email: 'asd',
-//             comment: 'aaa'
-//         }, {
-//             $index: ['comment']
-//         });
-//         await comments.set("teppi", {
-//             name: 'gogo',
-//             email: 'zxc',
-//             comment: 'hihi'
-//         }, {
-//             $index: ['comment']
-//         });
-//     }
-//     res.status(200).send({ status: "ok" });
-// })
+app.get('/schedule/comments', async (req, res) => {
+    if (req.header('authorization') === `Basic ${process.env.BASIC_AUTH}`) {
+        const comments = db.collection("sched_comments");
+        const results = await comments.filter({});
+        res.status(200).send(results);
+    } else {
+        res.status(200).send({ results: [] });
+    }
+})
 
-// app.delete('/test', async (req, res) => {
-//     if (req.header('authorization') === `Basic ${process.env.BASIC_AUTH}`) {
-//         const comments = db.collection("comments");
-//         await comments.delete(req.body.name);
-//     }
-//     res.status(200).send({ status: "ok" });
-// })
+app.delete('/schedule/comments', async (req, res) => {
+    if (req.header('authorization') === `Basic ${process.env.BASIC_AUTH}`) {
+        const { key } = req.body;
+        const comments = db.collection("sched_comments");
+        const { results } = await comments.filter({ parent: key });
+        if (results.length > 0) {
+            res.status(406).send({ status: "fail" });
+        } else {
+            await comments.delete(key);
+            res.status(200).send({ status: "ok" });
+        }
+    } else {
+        res.status(403).send({ status: "fail" });
+    }
+})
 
-// app.post('/schedule/comment/:key', async (req, res) => {
-//     if (req.header('authorization') === `Basic ${process.env.BASIC_AUTH}`) {
-//         const { email, comment, time } = req.body;
-//         const { key } = req.params;
-//         const comments = db.collection("sched_comments");
-//         const data = await comments.get(key);
-//         if (data) {
-//             res.status(406).send({ status: "fail" });
-//         } else {
-//             const { results } = await comments.filter({ time });
-//             if (results.length === 3) {
-//                 res.status(416).send({ status: "fail" });
-//             } else {
-//                 await comments.set(key, {
-//                     email,
-//                     comment,
-//                     time
-//                 }, {
-//                     $index: ['time']
-//                 });
-//                 res.status(200).send({ status: "ok" });
-//             }
-//         }
-//     } else {
-//         res.status(200).send({ status: "ok" });
-//     }
-// })
+app.post('/schedule/comments/check', async (req, res) => {
+    if (req.header('authorization') === `Basic ${process.env.BASIC_AUTH_COMMENTS}`) {
+        const time = genTimeNow(new Date());
+        const comments = db.collection("sched_comments");
+        const { results } = await comments.filter({ time });
+        if (results.length > 0) {
+            await Promise.all(results.map((result) => postScheduleComment(result.key, result.props, comments)));
+        }
+    }
+    res.status(200).send({ status: "ok" });
+})
 
 client.connect(err => {
     if (err) { console.error(err); return false; }
